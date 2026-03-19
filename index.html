@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Koe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #1a0533; --card: #240a42; --border: rgba(255,255,255,0.08);
+      --text: #f0e6ff; --muted: rgba(240,230,255,0.5);
+      --A: #e8394a; --A-light: #ff6b78;
+      --B: #1ca7ec; --B-light: #5bc8ff;
+      --C: #ffc107; --C-light: #ffd754;
+      --D: #26c281; --D-light: #52e8a0;
+      --radius: 18px;
+    }
+    body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+    body::before { content: ''; position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 50% at 20% 0%, rgba(138,43,226,0.25) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 100%, rgba(30,100,200,0.2) 0%, transparent 60%); pointer-events: none; }
+
+    .screen { display: none; position: relative; z-index: 1; width: 100%; max-width: 700px; padding: 24px 20px; animation: fadeIn 0.4s ease both; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── SETUP ── */
+    .logo { font-size: 2.8rem; font-weight: 900; letter-spacing: -0.03em; background: linear-gradient(135deg, #c084fc, #818cf8, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px; text-align: center; }
+    .tagline { color: var(--muted); font-size: 0.95rem; margin-bottom: 32px; text-align: center; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; width: 100%; margin-bottom: 16px; }
+    .card label { display: block; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+    .api-row { display: flex; gap: 10px; }
+    .api-row input { flex: 1; }
+
+    /* Mode selector */
+    .mode-selector { display: flex; gap: 10px; width: 100%; margin-bottom: 16px; }
+    .mode-btn { flex: 1; padding: 14px 8px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center; }
+    .mode-btn .mode-icon { font-size: 1.6rem; display: block; margin-bottom: 6px; }
+    .mode-btn:hover { border-color: rgba(192,132,252,0.4); color: var(--text); }
+    .mode-btn.selected { border-color: #c084fc; background: rgba(192,132,252,0.12); color: var(--text); box-shadow: 0 0 20px rgba(192,132,252,0.15); }
+
+    /* Drop zone */
+    .drop-zone { width: 100%; border: 2px dashed rgba(192,132,252,0.35); border-radius: var(--radius); padding: 36px 24px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative; }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: #c084fc; background: rgba(192,132,252,0.07); }
+    .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border: none; padding: 0; }
+    .drop-icon { font-size: 2.4rem; margin-bottom: 10px; }
+    .drop-title { font-size: 1rem; font-weight: 800; margin-bottom: 4px; }
+    .drop-sub { font-size: 0.8rem; color: var(--muted); }
+    .drop-zone.has-file { border-color: #26c281; background: rgba(38,194,129,0.07); }
+    .file-name { font-size: 0.82rem; color: #52e8a0; font-weight: 700; margin-top: 8px; display: none; }
+    .drop-zone.has-file .file-name { display: block; }
+    .or-divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin: 14px 0; }
+    .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    input[type="password"], textarea, select { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'Nunito', sans-serif; font-size: 0.9rem; padding: 12px 16px; outline: none; transition: border-color 0.2s; }
+    input:focus, textarea:focus, select:focus { border-color: rgba(192,132,252,0.5); }
+    textarea { resize: vertical; min-height: 140px; line-height: 1.6; }
+    select option { background: #240a42; }
+    .settings-row { display: flex; gap: 12px; }
+    .settings-row > div { flex: 1; }
+
+    .btn-start { width: 100%; padding: 18px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: var(--radius); color: white; font-family: 'Nunito', sans-serif; font-size: 1.1rem; font-weight: 900; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 8px 32px rgba(124,58,237,0.4); margin-top: 8px; }
+    .btn-start:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(124,58,237,0.5); }
+
+    /* ── LOADING ── */
+    #screen-loading { justify-content: center; min-height: 60vh; text-align: center; gap: 24px; }
+    .spinner { width: 64px; height: 64px; border: 4px solid rgba(192,132,252,0.2); border-top-color: #c084fc; border-radius: 50%; animation: spin 0.9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 1.3rem; font-weight: 800; }
+    .loading-sub { color: var(--muted); font-size: 0.9rem; }
+    .stream-box { width: 100%; max-width: 560px; background: rgba(255,255,255,0.04); border: 1px solid rgba(192,132,252,0.2); border-radius: 14px; padding: 16px 20px; font-family: 'Courier New', monospace; font-size: 0.78rem; color: rgba(240,230,255,0.6); line-height: 1.6; max-height: 160px; overflow-y: auto; text-align: left; word-break: break-all; display: none; }
+    .stream-box.active { display: block; }
+    .stream-cursor { display: inline-block; width: 8px; height: 14px; background: #c084fc; margin-left: 2px; animation: blink 0.7s infinite; vertical-align: text-bottom; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .token-count { font-size: 0.72rem; color: var(--muted); font-family: 'Courier New', monospace; }
+
+    /* ── QUIZ ── */
+    #screen-quiz { gap: 0; padding-top: 0; max-width: 800px; }
+    .quiz-header { width: 100%; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+    .progress-wrap { flex: 1; }
+    .progress-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .progress-bar { height: 8px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #7c3aed, #c084fc); border-radius: 99px; transition: width 0.4s ease; }
+    .timer-circle { width: 56px; height: 56px; position: relative; flex-shrink: 0; }
+    .timer-circle svg { transform: rotate(-90deg); }
+    .timer-circle circle { fill: none; stroke-width: 4; }
+    .timer-bg { stroke: rgba(255,255,255,0.1); }
+    .timer-fg { stroke: #c084fc; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+    .timer-number { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 900; }
+    .score-badge { background: rgba(255,255,255,0.08); border: 1px solid var(--border); border-radius: 12px; padding: 8px 16px; font-size: 0.85rem; font-weight: 800; white-space: nowrap; }
+    .score-badge span { color: #c084fc; }
+    .question-card { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 32px; margin-bottom: 16px; text-align: center; }
+    .question-num { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
+    .question-text { font-size: 1.25rem; font-weight: 800; line-height: 1.4; }
+    .answers-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+    .answer-btn { display: flex; align-items: center; gap: 14px; padding: 18px 20px; border-radius: var(--radius); border: none; cursor: pointer; font-family: 'Nunito', sans-serif; font-size: 0.95rem; font-weight: 700; color: white; text-align: left; transition: transform 0.15s, filter 0.15s; position: relative; overflow: hidden; }
+    .answer-btn::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.15); opacity: 0; transition: opacity 0.15s; }
+    .answer-btn:hover:not(:disabled)::before { opacity: 1; }
+    .answer-btn:hover:not(:disabled) { transform: scale(1.02); }
+    .answer-btn:disabled { cursor: default; }
+    .answer-btn:disabled:not(.correct):not(.wrong) { filter: brightness(0.5); }
+    .answer-btn.A { background: var(--A); } .answer-btn.B { background: var(--B); }
+    .answer-btn.C { background: var(--C); color: #1a0533; } .answer-btn.D { background: var(--D); }
+    .answer-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 900; flex-shrink: 0; }
+    .answer-btn.correct { animation: correctPop 0.4s ease both; }
+    .answer-btn.wrong { animation: wrongShake 0.4s ease both; filter: brightness(0.4); }
+    @keyframes correctPop { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} }
+    @keyframes wrongShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+    .feedback-bar { width: 100%; border-radius: var(--radius); padding: 16px 24px; margin-top: 12px; font-size: 1rem; font-weight: 800; text-align: center; display: none; animation: fadeIn 0.3s ease both; }
+    .feedback-bar.oikein { background: rgba(38,194,129,0.2); border: 1px solid var(--D); color: var(--D-light); }
+    .feedback-bar.vaarin { background: rgba(232,57,74,0.2); border: 1px solid var(--A); color: var(--A-light); }
+    .btn-next { margin-top: 16px; padding: 16px 48px; background: white; color: #1a0533; border: none; border-radius: var(--radius); font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; display: none; transition: transform 0.15s; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .btn-next:hover { transform: translateY(-2px); }
+    .btn-next.visible { display: block; animation: fadeIn 0.3s ease both; }
+
+    /* ── KÄÄNTELYKORTIT ── */
+    #screen-kortit { max-width: 600px; }
+    .kortit-header { width: 100%; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 12px; }
+    .kortti-stat { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 800; }
+    .kortti-stat.vihrea { color: var(--D-light); }
+    .kortti-stat.punainen { color: var(--A-light); }
+
+    .flash-kortti-wrap { width: 100%; perspective: 1000px; cursor: pointer; margin-bottom: 20px; }
+    .flash-kortti { width: 100%; min-height: 260px; position: relative; transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4,0,0.2,1); border-radius: var(--radius); }
+    .flash-kortti.kaannetty { transform: rotateY(180deg); }
+    .flash-kortti.slide-out-right { animation: slideRight 0.4s ease forwards; }
+    .flash-kortti.slide-out-left { animation: slideLeft 0.4s ease forwards; }
+    @keyframes slideRight { to { transform: translateX(120%) rotateY(20deg); opacity: 0; } }
+    @keyframes slideLeft { to { transform: translateX(-120%) rotateY(-20deg); opacity: 0; } }
+
+    .kortti-sivu { position: absolute; inset: 0; backface-visibility: hidden; border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 36px 32px; text-align: center; }
+    .kortti-etu { background: linear-gradient(135deg, #2d0f52, #1a0a3a); border: 1px solid rgba(192,132,252,0.25); }
+    .kortti-taka { background: linear-gradient(135deg, #0a2a1a, #071a12); border: 1px solid rgba(38,194,129,0.25); transform: rotateY(180deg); }
+    .kortti-label { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+    .kortti-teksti { font-size: 1.4rem; font-weight: 800; line-height: 1.4; }
+    .kortti-taka .kortti-teksti { color: var(--D-light); }
+    .kortti-selitys-teksti { font-size: 0.82rem; color: var(--muted); margin-top: 14px; line-height: 1.5; }
+    .kortti-hint { font-size: 0.78rem; color: var(--muted); margin-top: 8px; }
+
+    .kortti-toiminnot { width: 100%; display: none; gap: 16px; }
+    .kortti-btn { flex: 1; padding: 16px; border-radius: var(--radius); border: none; font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+    .kortti-btn.ei { background: rgba(232,57,74,0.2); border: 1px solid var(--A); color: var(--A-light); }
+    .kortti-btn.ei:hover { background: rgba(232,57,74,0.35); transform: scale(1.03); }
+    .kortti-btn.kylla { background: rgba(38,194,129,0.2); border: 1px solid var(--D); color: var(--D-light); }
+    .kortti-btn.kylla:hover { background: rgba(38,194,129,0.35); transform: scale(1.03); }
+
+    /* ── KIRJOITUSMINIPELI ── */
+    #screen-kirjoitus { max-width: 620px; }
+    .kirj-header { width: 100%; display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
+    .kirj-aika-badge { background: rgba(192,132,252,0.15); border: 1px solid rgba(192,132,252,0.3); border-radius: 12px; padding: 8px 16px; font-size: 1rem; font-weight: 900; font-family: 'Courier New', monospace; min-width: 60px; text-align: center; }
+    .kirj-score-badge { background: rgba(255,255,255,0.08); border: 1px solid var(--border); border-radius: 12px; padding: 8px 16px; font-size: 0.85rem; font-weight: 800; }
+    .kirj-score-badge span { color: #c084fc; }
+
+    .kirj-kysymys-card { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 32px; margin-bottom: 16px; text-align: center; }
+    .kirj-num { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+    .kirj-kysymys { font-size: 1.2rem; font-weight: 800; line-height: 1.4; margin-bottom: 8px; }
+    .kirj-pituus { font-size: 0.75rem; color: var(--muted); font-family: 'Courier New', monospace; }
+
+    .kirj-input-wrap { width: 100%; display: flex; gap: 10px; margin-bottom: 12px; }
+    .kirj-input-wrap input { flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(192,132,252,0.3); border-radius: 14px; color: var(--text); font-family: 'Nunito', sans-serif; font-size: 1.1rem; font-weight: 700; padding: 16px 20px; outline: none; transition: border-color 0.2s; }
+    .kirj-input-wrap input:focus { border-color: #c084fc; }
+    .kirj-input-wrap input:disabled { opacity: 0.5; }
+    .kirj-tarkista { padding: 16px 24px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: 14px; color: white; font-family: 'Nunito', sans-serif; font-size: 0.95rem; font-weight: 900; cursor: pointer; transition: transform 0.15s; white-space: nowrap; }
+    .kirj-tarkista:hover { transform: scale(1.04); }
+
+    .kirj-vihje-row { display: flex; gap: 10px; width: 100%; margin-bottom: 10px; align-items: center; }
+    .kirj-vihje-btn { padding: 8px 16px; border: 1px solid var(--border); border-radius: 10px; background: transparent; color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .kirj-vihje-btn:hover { border-color: #ffc107; color: #ffd754; }
+    .kirj-vihje { font-size: 0.85rem; color: #ffd754; font-weight: 600; }
+
+    .kirj-feedback { width: 100%; padding: 14px 20px; border-radius: 14px; font-size: 1rem; font-weight: 800; text-align: center; min-height: 48px; transition: all 0.2s; }
+    .kirj-feedback.oikein { background: rgba(38,194,129,0.2); border: 1px solid var(--D); color: var(--D-light); }
+    .kirj-feedback.vaarin { background: rgba(232,57,74,0.2); border: 1px solid var(--A); color: var(--A-light); }
+
+    /* ── RESULTS ── */
+    #screen-results { gap: 20px; text-align: center; }
+    .result-title { font-size: 2.2rem; font-weight: 900; letter-spacing: -0.02em; }
+    .result-emoji { font-size: 4rem; margin-bottom: 8px; }
+    .result-score-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; width: 100%; }
+    .big-score { font-size: 4rem; font-weight: 900; background: linear-gradient(135deg, #c084fc, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; }
+    .score-label { color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
+    .result-breakdown { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+    .breakdown-item { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; display: flex; align-items: flex-start; gap: 14px; text-align: left; }
+    .breakdown-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+    .breakdown-q { font-size: 0.88rem; font-weight: 700; margin-bottom: 4px; }
+    .breakdown-a { font-size: 0.8rem; color: var(--muted); }
+    .breakdown-a.oikein { color: var(--D-light); }
+    .breakdown-a.vaarin { color: var(--A-light); }
+    .btn-restart { padding: 16px 48px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: var(--radius); color: white; font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; box-shadow: 0 8px 32px rgba(124,58,237,0.4); transition: transform 0.15s; }
+    .btn-restart:hover { transform: translateY(-2px); }
+
+    .confetti-piece { position: fixed; width: 10px; height: 10px; top: -20px; border-radius: 2px; animation: confettiFall linear forwards; pointer-events: none; z-index: 999; }
+    @keyframes confettiFall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+    @media (max-width: 500px) {
+      .answers-grid { grid-template-columns: 1fr; }
+      .mode-selector { flex-wrap: wrap; }
+      .mode-btn { min-width: 45%; }
+    }
+
+    /* ── KAMERA ── */
+    .input-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+    .input-tab { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center; }
+    .input-tab.active { border-color: #c084fc; background: rgba(192,132,252,0.12); color: var(--text); }
+    .input-panel { display: none; }
+    .input-panel.active { display: block; }
+
+    .kamera-wrap { width: 100%; border-radius: var(--radius); overflow: hidden; background: #000; position: relative; }
+    #kamera-video { width: 100%; max-height: 260px; object-fit: cover; display: block; }
+    #kamera-canvas { display: none; }
+    .kamera-toiminnot { display: flex; gap: 10px; margin-top: 10px; }
+    .kamera-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-family: 'Nunito', sans-serif; font-size: 0.88rem; font-weight: 800; cursor: pointer; transition: transform 0.15s; }
+    .kamera-btn.ota { background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; }
+    .kamera-btn.ota:hover { transform: scale(1.03); }
+    .kamera-btn.vaihda { background: rgba(255,255,255,0.08); border: 1px solid var(--border); color: var(--muted); }
+    .kamera-btn.vaihda:hover { border-color: #c084fc; color: var(--text); }
+    .kuva-esikatselu { width: 100%; border-radius: var(--radius); overflow: hidden; position: relative; display: none; }
+    .kuva-esikatselu img { width: 100%; max-height: 260px; object-fit: contain; border-radius: var(--radius); border: 1px solid rgba(192,132,252,0.3); }
+    .kuva-toiminnot { display: flex; gap: 10px; margin-top: 10px; }
+    .kuva-btn { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .kuva-btn:hover { border-color: #c084fc; color: var(--text); }
+    .kuva-btn.analysoi { background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; color: white; }
+    .kuva-btn.analysoi:hover { transform: scale(1.03); }
+    .ocr-status { font-size: 0.8rem; color: var(--muted); text-align: center; margin-top: 8px; min-height: 20px; }
+    .ocr-status.lataa { color: #c084fc; }
+    .ocr-status.valmis { color: #52e8a0; }
+    .ocr-status.virhe { color: #ff6b78; }
+
+    /* ── OHJE ── */
+    .ohje-toggle { width: 100%; padding: 12px 18px; background: transparent; border: 1px solid var(--border); border-radius: 12px; color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; text-align: left; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; transition: all 0.2s; }
+    .ohje-toggle:hover { border-color: rgba(192,132,252,0.4); color: var(--text); }
+    .ohje-toggle .arrow { transition: transform 0.25s; font-style: normal; }
+    .ohje-toggle.auki .arrow { transform: rotate(180deg); }
+    .ohje-sisalto { display: none; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 16px; animation: fadeIn 0.2s ease both; }
+    .ohje-sisalto.nakyva { display: block; }
+    .ohje-askel { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
+    .ohje-askel:last-child { margin-bottom: 0; }
+    .ohje-num { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; font-size: 0.78rem; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+    .ohje-teksti { font-size: 0.85rem; line-height: 1.55; color: var(--text); }
+    .ohje-teksti strong { color: #c084fc; }
+    .ohje-tagit { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .ohje-tagi { font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 99px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--muted); }
+
+    .kuva-analysoi-rivi { display: flex; align-items: center; gap: 14px; margin-top: 12px; padding: 14px 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(192,132,252,0.2); border-radius: 14px; }
+    .kuva-esikatselu-pieni { width: 72px; height: 72px; border-radius: 10px; overflow: hidden; flex-shrink: 0; border: 1px solid var(--border); }
+    .kuva-esikatselu-pieni img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .kuva-analysoi-btn { flex: 1; padding: 12px 16px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: 12px; color: white; font-family: 'Nunito', sans-serif; font-size: 0.88rem; font-weight: 800; cursor: pointer; transition: transform 0.15s; }
+    .kuva-analysoi-btn:hover { transform: scale(1.02); }
+    .kuva-analysoi-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── MUISTIPELI ── */
+    #screen-muisti { max-width: 680px; }
+    .muisti-grid { display: grid; gap: 10px; width: 100%; margin-bottom: 16px; }
+    .muisti-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+    .muisti-grid.cols-6 { grid-template-columns: repeat(6, 1fr); }
+    .muisti-kortti { aspect-ratio: 1; border-radius: 12px; border: none; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform 0.4s ease; background: transparent; }
+    .muisti-kortti .muisti-front, .muisti-kortti .muisti-back { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 12px; backface-visibility: hidden; -webkit-backface-visibility: hidden; text-align: center; }
+    .muisti-kortti .muisti-front { background: linear-gradient(135deg, #2d0f52, #1e0a3a); color: #c084fc; font-size: 1.4rem; transform: rotateY(0deg); }
+    .muisti-kortti .muisti-back { background: var(--card); border: 1px solid var(--border); color: var(--text); font-size: 0.72rem; font-weight: 700; line-height: 1.3; transform: rotateY(180deg); }
+    .muisti-kortti.avoin { transform: rotateY(180deg); }
+    .muisti-kortti.loydetty { transform: rotateY(180deg); }
+    .muisti-kortti.loydetty .muisti-back { background: rgba(38,194,129,0.2); border-color: var(--D); color: var(--D-light); }
+    .muisti-kortti.varin .muisti-back { background: rgba(232,57,74,0.15); border-color: var(--A); color: var(--text); }
+    .muisti-grid { perspective: 1000px; }
+    .muisti-stats { display: flex; gap: 12px; width: 100%; margin-bottom: 16px; }
+    .muisti-stat { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; }
+    .muisti-stat-val { font-size: 1.4rem; font-weight: 900; color: #c084fc; }
+    .muisti-stat-lbl { font-size: 0.7rem; color: var(--muted); }
+
+    /* ── JÄRJESTÄ ── */
+    #screen-jarjesta { max-width: 620px; }
+    .jarjesta-kysymys { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 28px; text-align: center; margin-bottom: 16px; font-size: 1.1rem; font-weight: 800; line-height: 1.4; }
+    .jarjesta-lista { width: 100%; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .jarjesta-item { background: var(--card); border: 2px solid var(--border); border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; cursor: grab; transition: all 0.15s; font-size: 0.92rem; font-weight: 700; user-select: none; }
+    .jarjesta-item:active { cursor: grabbing; }
+    .jarjesta-item.dragging { opacity: 0.4; transform: scale(0.97); }
+    .jarjesta-item.drag-over { border-color: #c084fc; background: rgba(192,132,252,0.1); }
+    .jarjesta-item.oikein { border-color: var(--D); background: rgba(38,194,129,0.1); color: var(--D-light); }
+    .jarjesta-item.vaarin { border-color: var(--A); background: rgba(232,57,74,0.1); color: var(--A-light); }
+    .jarjesta-handle { color: var(--muted); font-size: 1.1rem; flex-shrink: 0; }
+    .jarjesta-num { width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 900; flex-shrink: 0; }
+    .jarjesta-tarkista { width: 100%; padding: 16px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: var(--radius); color: white; font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; margin-bottom: 10px; transition: transform 0.15s; }
+    .jarjesta-tarkista:hover { transform: scale(1.01); }
+
+
+  </style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div class="screen active" id="screen-setup">
+  <div class="logo">🧠 AI Koe</div>
+  <p class="tagline">Raahaa kirjan luku tai tekstitiedosto — AI luo siitä pelin</p>
+
+  <button class="ohje-toggle" id="ohje-toggle" onclick="toggleOhje()">
+    📖 Miten käyttää? <span class="arrow">▼</span>
+  </button>
+  <div class="ohje-sisalto" id="ohje-sisalto">
+    <div class="ohje-askel">
+      <div class="ohje-num">1</div>
+      <div class="ohje-teksti">Hanki <strong>Anthropic API-avain</strong> osoitteesta <strong>console.anthropic.com</strong> ja syötä se kenttään. Avain tallennetaan selaimeen automaattisesti.</div>
+    </div>
+    <div class="ohje-askel">
+      <div class="ohje-num">2</div>
+      <div class="ohje-teksti">Valitse <strong>pelimuoto</strong>: Monivalinta (Kahoot-tyyli), Kääntelykortit (flip cards) tai Kirjoituspeli (kirjoita vastaus itse).</div>
+    </div>
+    <div class="ohje-askel">
+      <div class="ohje-num">3</div>
+      <div class="ohje-teksti">Lisää <strong>opiskelumateriaali</strong> kolmella tavalla:<br>
+        📂 <strong>Tiedosto</strong> — raahaa .txt tai .md tiedosto<br>
+        📷 <strong>Kamera</strong> — kuvaa paperi, AI lukee tekstin automaattisesti<br>
+        ✏️ <strong>Teksti</strong> — liitä tai kirjoita teksti suoraan
+      </div>
+    </div>
+    <div class="ohje-askel">
+      <div class="ohje-num">4</div>
+      <div class="ohje-teksti">Säädä <strong>kysymysten määrä</strong>, <strong>vaikeustaso</strong> ja <strong>aika per tehtävä</strong>. Paina <strong>Aloita!</strong> — AI generoi pelin tekstistäsi reaaliajassa.</div>
+    </div>
+    <div class="ohje-askel">
+      <div class="ohje-num">5</div>
+      <div class="ohje-teksti">Kortit-tilassa: klikkaa korttia tai paina <strong>välilyöntiä</strong> kääntääksesi. Kirjoituspelissä: paina <strong>Enter</strong> tarkastaaksesi vastauksen.</div>
+    </div>
+    <div class="ohje-tagit">
+      <span class="ohje-tagi">🎯 Monivalinta</span>
+      <span class="ohje-tagi">🃏 Kääntelykortit</span>
+      <span class="ohje-tagi">⌨️ Kirjoituspeli</span>
+      <span class="ohje-tagi">📷 Kuvantunnistus</span>
+      <span class="ohje-tagi">⚡ Streaming</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Anthropic API-avain</label>
+    <div class="api-row">
+      <input type="password" id="api-key" placeholder="sk-ant-..." />
+    </div>
+  </div>
+
+  <div class="card">
+    <label>🎮 Pelimuoto</label>
+    <div class="mode-selector">
+      <button class="mode-btn selected" data-mode="quiz" onclick="valitsePelimuoto('quiz')">
+        <span class="mode-icon">🎯</span>Monivalinta
+      </button>
+      <button class="mode-btn" data-mode="kortit" onclick="valitsePelimuoto('kortit')">
+        <span class="mode-icon">🃏</span>Kääntelykortit
+      </button>
+      <button class="mode-btn" data-mode="kirjoitus" onclick="valitsePelimuoto('kirjoitus')">
+        <span class="mode-icon">⌨️</span>Kirjoituspeli
+      </button>
+      <button class="mode-btn" data-mode="muisti" onclick="valitsePelimuoto('muisti')">
+        <span class="mode-icon">🧩</span>Muistipeli
+      </button>
+      <button class="mode-btn" data-mode="jarjesta" onclick="valitsePelimuoto('jarjesta')">
+        <span class="mode-icon">🔀</span>Järjestä
+      </button>
+
+    </div>
+  </div>
+
+  <div class="card">
+    <label>📥 Syötä materiaali</label>
+    <div class="input-tabs">
+      <button class="input-tab active" data-tab="tiedosto" onclick="vaihdaTab('tiedosto')">📂 Tiedosto</button>
+      <button class="input-tab" data-tab="kamera" onclick="vaihdaTab('kamera')">📷 Kamera</button>
+      <button class="input-tab" data-tab="teksti" onclick="vaihdaTab('teksti')">✏️ Teksti</button>
+    </div>
+
+    <!-- TIEDOSTO -->
+    <div class="input-panel active" id="panel-tiedosto">
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" accept=".txt,.md,.html,.rtf,.csv,.png,.jpg,.jpeg,.webp,.gif,.bmp" />
+        <div class="drop-icon" id="drop-icon">📂</div>
+        <div class="drop-title">Raahaa tiedosto tai kuva tähän</div>
+        <div class="drop-sub">Teksti: .txt .md .html .rtf &nbsp;·&nbsp; Kuva: .png .jpg .jpeg .webp .gif</div>
+        <div class="file-name" id="file-name"></div>
+      </div>
+      <div class="kuva-analysoi-rivi" id="kuva-analysoi-rivi" style="display:none">
+        <div class="kuva-esikatselu-pieni">
+          <img id="tiedosto-kuva-preview" src="" alt=""/>
+        </div>
+        <button class="kuva-analysoi-btn" id="tiedosto-analysoi-btn">🔍 Analysoi teksti kuvasta</button>
+      </div>
+      <div class="ocr-status" id="tiedosto-ocr-status"></div>
+    </div>
+
+    <!-- KAMERA -->
+    <div class="input-panel" id="panel-kamera">
+      <div class="kamera-wrap" id="kamera-wrap">
+        <video id="kamera-video" autoplay playsinline></video>
+        <canvas id="kamera-canvas"></canvas>
+      </div>
+      <div class="kamera-toiminnot">
+        <button class="kamera-btn ota" onclick="otaKuva()">📸 Ota kuva</button>
+        <button class="kamera-btn vaihda" onclick="vaihda">Vaihda kamera 🔄</button>
+      </div>
+      <div class="kuva-esikatselu" id="kuva-esikatselu">
+        <img id="kuva-preview" src="" alt="Otettu kuva" />
+        <div class="kuva-toiminnot">
+          <button class="kuva-btn" onclick="uusiKuva()">🔄 Ota uusi</button>
+          <button class="kuva-btn analysoi" onclick="analysoi">🔍 Analysoi teksti</button>
+        </div>
+      </div>
+      <div class="ocr-status" id="ocr-status"></div>
+    </div>
+
+    <!-- TEKSTI -->
+    <div class="input-panel" id="panel-teksti">
+      <textarea id="aihe" placeholder="Liitä kirjan luku, artikkeli tai muu teksti tähän..."></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="settings-row">
+      <div>
+        <label>Määrä</label>
+        <select id="maara">
+          <option value="5">5 kpl</option>
+          <option value="8" selected>8 kpl</option>
+          <option value="10">10 kpl</option>
+          <option value="15">15 kpl</option>
+        </select>
+      </div>
+      <div>
+        <label>Vaikeustaso</label>
+        <select id="vaikeus">
+          <option value="helppo">😊 Helppo</option>
+          <option value="keskitaso" selected>🤔 Keskitaso</option>
+          <option value="vaikea">🔥 Vaikea</option>
+        </select>
+      </div>
+      <div>
+        <label>Aika / tehtävä</label>
+        <select id="aika">
+          <option value="15">15 sek</option>
+          <option value="20" selected>20 sek</option>
+          <option value="30">30 sek</option>
+          <option value="60">60 sek</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-start" onclick="aloitaKoe()">🚀 Aloita!</button>
+</div>
+
+<!-- LOADING -->
+<div class="screen" id="screen-loading">
+  <div class="spinner"></div>
+  <div>
+    <div class="loading-text">AI luo sisältöä...</div>
+    <div class="loading-sub" id="loading-sub">Lähetetään pyyntö...</div>
+  </div>
+  <div class="stream-box" id="stream-box"></div>
+  <div class="token-count" id="token-count"></div>
+</div>
+
+<!-- MONIVALINTA -->
+<div class="screen" id="screen-quiz">
+  <div class="quiz-header">
+    <div class="progress-wrap">
+      <div class="progress-label" id="progress-label">Kysymys 1 / 8</div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+    <div class="timer-circle">
+      <svg width="56" height="56" viewBox="0 0 56 56">
+        <circle class="timer-bg" cx="28" cy="28" r="24"/>
+        <circle class="timer-fg" id="timer-fg" cx="28" cy="28" r="24" stroke-dasharray="150.8" stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-number" id="timer-num">20</div>
+    </div>
+    <div class="score-badge">⭐ <span id="score-display">0</span></div>
+  </div>
+  <div class="question-card">
+    <div class="question-num" id="question-num">KYSYMYS 1</div>
+    <div class="question-text" id="question-text"></div>
+  </div>
+  <div class="answers-grid" id="answers-grid"></div>
+  <div class="feedback-bar" id="feedback-bar"></div>
+  <button class="btn-next" id="btn-next" onclick="seuraava()">Seuraava →</button>
+</div>
+
+<!-- KÄÄNTELYKORTIT -->
+<div class="screen" id="screen-kortit">
+  <div class="kortit-header">
+    <div class="progress-wrap">
+      <div class="progress-label" id="kortti-progress">1 / 8</div>
+      <div class="progress-bar"><div class="progress-fill" id="kortti-progress-fill" style="width:0%"></div></div>
+    </div>
+    <div class="kortti-stat vihrea">✅ <span id="kortti-tunnetaan">0</span></div>
+    <div class="kortti-stat punainen">❌ <span id="kortti-ei-tunnetaan">0</span></div>
+  </div>
+
+  <div class="flash-kortti-wrap" onclick="kaannaKortti()">
+    <div class="flash-kortti" id="flash-kortti">
+      <div class="kortti-sivu kortti-etu">
+        <div class="kortti-label">Käsite</div>
+        <div class="kortti-teksti" id="kortti-etu"></div>
+        <div class="kortti-hint">Klikkaa kääntääksesi · Välilyönti toimii myös</div>
+      </div>
+      <div class="kortti-sivu kortti-taka">
+        <div class="kortti-label">Vastaus</div>
+        <div class="kortti-teksti" id="kortti-taka"></div>
+        <div class="kortti-selitys-teksti" id="kortti-selitys"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="kortti-toiminnot" id="kortti-toiminnot">
+    <button class="kortti-btn ei" onclick="korttiVastaus(false)">❌ En tiennyt</button>
+    <button class="kortti-btn kylla" onclick="korttiVastaus(true)">✅ Tiesin!</button>
+  </div>
+
+  <button class="btn-next visible" style="margin-top:20px" onclick="takaisin()">← Takaisin</button>
+</div>
+
+<!-- KIRJOITUSMINIPELI -->
+<div class="screen" id="screen-kirjoitus">
+  <div class="kirj-header">
+    <div class="progress-wrap">
+      <div class="progress-label" id="kirj-progress">1 / 8</div>
+      <div class="progress-bar"><div class="progress-fill" id="kirj-progress-fill" style="width:0%"></div></div>
+    </div>
+    <div class="kirj-aika-badge" id="kirj-aika">20</div>
+    <div class="kirj-score-badge">⭐ <span id="kirj-score">0</span></div>
+  </div>
+
+  <div class="kirj-kysymys-card">
+    <div class="kirj-num" id="kirj-num">TEHTÄVÄ 1</div>
+    <div class="kirj-kysymys" id="kirj-kysymys"></div>
+    <div class="kirj-pituus" id="kirj-pituus"></div>
+  </div>
+
+  <div class="kirj-input-wrap">
+    <input type="text" id="kirj-input" placeholder="Kirjoita vastauksesi..." autocomplete="off" />
+    <button class="kirj-tarkista" onclick="kirjoitusTarkista()">Tarkista ✓</button>
+  </div>
+
+  <div class="kirj-vihje-row">
+    <button class="kirj-vihje-btn" onclick="naytaVihje()">💡 Näytä vihje</button>
+    <span class="kirj-vihje" id="kirj-vihje"></span>
+  </div>
+
+  <div class="kirj-feedback" id="kirj-feedback"></div>
+</div>
+
+<!-- TULOKSET -->
+<div class="screen" id="screen-results">
+  <div class="result-emoji" id="result-emoji">🏆</div>
+  <div class="result-title" id="result-title">Hieno suoritus!</div>
+  <div class="result-score-card">
+    <div class="big-score" id="big-score">0/0</div>
+    <div class="score-label" id="score-label">pistettä</div>
+  </div>
+  <div class="result-breakdown" id="result-breakdown"></div>
+  <button class="btn-restart" onclick="takaisin()">🔄 Uusi peli</button>
+</div>
+
+
+<!-- ════ MUISTIPELI ════ -->
+<div class="screen" id="screen-muisti">
+  <div class="quiz-header">
+    <div class="progress-wrap">
+      <div class="progress-label" id="muisti-progress">0 / 0 paria löydetty</div>
+      <div class="progress-bar"><div class="progress-fill" id="muisti-progress-fill" style="width:0%"></div></div>
+    </div>
+    <div class="score-badge">⭐ <span id="muisti-pisteet">0</span></div>
+  </div>
+  <div class="muisti-stats">
+    <div class="muisti-stat"><div class="muisti-stat-val" id="muisti-yritykset">0</div><div class="muisti-stat-lbl">Yritykset</div></div>
+    <div class="muisti-stat"><div class="muisti-stat-val" id="muisti-parit">0</div><div class="muisti-stat-lbl">Parit löydetty</div></div>
+    <div class="muisti-stat"><div class="muisti-stat-val" id="muisti-tarkkuus">—</div><div class="muisti-stat-lbl">Tarkkuus</div></div>
+  </div>
+  <div class="muisti-grid cols-4" id="muisti-grid"></div>
+</div>
+
+<!-- ════ JÄRJESTÄ ════ -->
+<div class="screen" id="screen-jarjesta">
+  <div class="quiz-header">
+    <div class="progress-wrap">
+      <div class="progress-label" id="jarjesta-progress">Tehtävä 1 / 8</div>
+      <div class="progress-bar"><div class="progress-fill" id="jarjesta-progress-fill" style="width:0%"></div></div>
+    </div>
+    <div class="score-badge">⭐ <span id="jarjesta-pisteet">0</span></div>
+  </div>
+  <div class="jarjesta-kysymys" id="jarjesta-kysymys">Järjestä oikein</div>
+  <div class="jarjesta-lista" id="jarjesta-lista"></div>
+  <button class="jarjesta-tarkista" onclick="jarjestaTarkista()">✓ Tarkista järjestys</button>
+  <div class="feedback-bar" id="jarjesta-feedback"></div>
+  <button class="btn-next" id="jarjesta-next" onclick="jarjestaSeuraava()">Seuraava →</button>
+</div>
+
+
+
+<script src="quiz.js"></script>
+</body>
+</html>
