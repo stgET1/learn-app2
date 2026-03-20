@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AI Koe</title>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -16,7 +16,7 @@
       --D: #26c281; --D-light: #52e8a0;
       --radius: 18px;
     }
-    body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+    body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
     body::before { content: ''; position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 50% at 20% 0%, rgba(138,43,226,0.25) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 100%, rgba(30,100,200,0.2) 0%, transparent 60%); pointer-events: none; }
 
     .screen { display: none; position: relative; z-index: 1; width: 100%; max-width: 700px; padding: 24px 20px; animation: fadeIn 0.4s ease both; }
@@ -24,19 +24,20 @@
     @keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 
     /* ── SETUP ── */
-    .logo { font-size: 2.8rem; font-weight: 900; letter-spacing: -0.03em; background: linear-gradient(135deg, #c084fc, #818cf8, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px; text-align: center; }
+    .logo { font-size: 2.8rem; font-weight: 900; letter-spacing: -0.04em; background: linear-gradient(135deg, #e879f9, #818cf8, #38bdf8, #c084fc); background-size: 300% 300%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: logoShimmer 4s ease infinite; margin-bottom: 6px; text-align: center; }
+    @keyframes logoShimmer { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
     .tagline { color: var(--muted); font-size: 0.95rem; margin-bottom: 32px; text-align: center; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; width: 100%; margin-bottom: 16px; }
+    .card { background: rgba(36,10,66,0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.09); border-radius: var(--radius); padding: 28px; width: 100%; margin-bottom: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05); transition: box-shadow 0.2s; }
     .card label { display: block; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
     .api-row { display: flex; gap: 10px; }
     .api-row input { flex: 1; }
 
     /* Mode selector */
     .mode-selector { display: flex; gap: 10px; width: 100%; margin-bottom: 16px; }
-    .mode-btn { flex: 1; padding: 14px 8px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center; }
+    .mode-btn { flex: 1; padding: 14px 8px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center; }
     .mode-btn .mode-icon { font-size: 1.6rem; display: block; margin-bottom: 6px; }
     .mode-btn:hover { border-color: rgba(192,132,252,0.4); color: var(--text); }
-    .mode-btn.selected { border-color: #c084fc; background: rgba(192,132,252,0.12); color: var(--text); box-shadow: 0 0 20px rgba(192,132,252,0.15); }
+    .mode-btn.selected { border-color: #c084fc; background: rgba(192,132,252,0.15); color: var(--text); box-shadow: 0 0 24px rgba(192,132,252,0.25), inset 0 1px 0 rgba(255,255,255,0.1); transform: translateY(-1px); }
 
     /* Drop zone */
     .drop-zone { width: 100%; border: 2px dashed rgba(192,132,252,0.35); border-radius: var(--radius); padding: 36px 24px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative; }
@@ -51,15 +52,16 @@
     .or-divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin: 14px 0; }
     .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-    input[type="password"], textarea, select { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'Nunito', sans-serif; font-size: 0.9rem; padding: 12px 16px; outline: none; transition: border-color 0.2s; }
+    input[type="password"], textarea, select { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'Outfit', sans-serif; font-size: 0.9rem; padding: 12px 16px; outline: none; transition: border-color 0.2s; }
     input:focus, textarea:focus, select:focus { border-color: rgba(192,132,252,0.5); }
     textarea { resize: vertical; min-height: 140px; line-height: 1.6; }
     select option { background: #240a42; }
     .settings-row { display: flex; gap: 12px; }
     .settings-row > div { flex: 1; }
 
-    .btn-start { width: 100%; padding: 18px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: var(--radius); color: white; font-family: 'Nunito', sans-serif; font-size: 1.1rem; font-weight: 900; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 8px 32px rgba(124,58,237,0.4); margin-top: 8px; }
-    .btn-start:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(124,58,237,0.5); }
+    .btn-start { width: 100%; padding: 18px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: var(--radius); color: white; font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 900; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 8px 32px rgba(124,58,237,0.4); margin-top: 8px; }
+    .btn-start:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 16px 48px rgba(124,58,237,0.6), 0 0 40px rgba(192,132,252,0.2); background-position: 100% 0; }
+    @keyframes btnPulse { 0%,100%{box-shadow:0 8px 32px rgba(124,58,237,0.45)} 50%{box-shadow:0 8px 40px rgba(124,58,237,0.65), 0 0 30px rgba(192,132,252,0.15)} }
 
     /* ── LOADING ── */
     #screen-loading { justify-content: center; min-height: 60vh; text-align: center; gap: 24px; }
@@ -86,16 +88,16 @@
     .timer-bg { stroke: rgba(255,255,255,0.1); }
     .timer-fg { stroke: #c084fc; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
     .timer-number { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 900; }
-    .score-badge { background: rgba(255,255,255,0.08); border: 1px solid var(--border); border-radius: 12px; padding: 8px 16px; font-size: 0.85rem; font-weight: 800; white-space: nowrap; }
+    .score-badge { background: rgba(192,132,252,0.1); border: 1px solid rgba(192,132,252,0.25); border-radius: 12px; padding: 8px 16px; font-size: 0.85rem; font-weight: 800; white-space: nowrap; backdrop-filter: blur(8px); box-shadow: 0 0 16px rgba(192,132,252,0.1); }
     .score-badge span { color: #c084fc; }
     .question-card { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 32px; margin-bottom: 16px; text-align: center; }
     .question-num { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
     .question-text { font-size: 1.25rem; font-weight: 800; line-height: 1.4; }
     .answers-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
-    .answer-btn { display: flex; align-items: center; gap: 14px; padding: 18px 20px; border-radius: var(--radius); border: none; cursor: pointer; font-family: 'Nunito', sans-serif; font-size: 0.95rem; font-weight: 700; color: white; text-align: left; transition: transform 0.15s, filter 0.15s; position: relative; overflow: hidden; }
+    .answer-btn { display: flex; align-items: center; gap: 14px; padding: 18px 20px; border-radius: var(--radius); border: none; cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 700; color: white; text-align: left; transition: transform 0.15s, filter 0.15s; position: relative; overflow: hidden; }
     .answer-btn::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.15); opacity: 0; transition: opacity 0.15s; }
     .answer-btn:hover:not(:disabled)::before { opacity: 1; }
-    .answer-btn:hover:not(:disabled) { transform: scale(1.02); }
+    .answer-btn:hover:not(:disabled) { transform: scale(1.03) translateY(-2px); filter: brightness(1.12); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
     .answer-btn:disabled { cursor: default; }
     .answer-btn:disabled:not(.correct):not(.wrong) { filter: brightness(0.5); }
     .answer-btn.A { background: var(--A); } .answer-btn.B { background: var(--B); }
@@ -108,7 +110,7 @@
     .feedback-bar { width: 100%; border-radius: var(--radius); padding: 16px 24px; margin-top: 12px; font-size: 1rem; font-weight: 800; text-align: center; display: none; animation: fadeIn 0.3s ease both; }
     .feedback-bar.oikein { background: rgba(38,194,129,0.2); border: 1px solid var(--D); color: var(--D-light); }
     .feedback-bar.vaarin { background: rgba(232,57,74,0.2); border: 1px solid var(--A); color: var(--A-light); }
-    .btn-next { margin-top: 16px; padding: 16px 48px; background: white; color: #1a0533; border: none; border-radius: var(--radius); font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; display: none; transition: transform 0.15s; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .btn-next { margin-top: 16px; padding: 16px 48px; background: white; color: #1a0533; border: none; border-radius: var(--radius); font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; display: none; transition: transform 0.15s; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
     .btn-next:hover { transform: translateY(-2px); }
     .btn-next.visible { display: block; animation: fadeIn 0.3s ease both; }
 
@@ -119,25 +121,22 @@
     .kortti-stat.vihrea { color: var(--D-light); }
     .kortti-stat.punainen { color: var(--A-light); }
 
-    .flash-kortti-wrap { width: 100%; perspective: 1000px; cursor: pointer; margin-bottom: 20px; }
-    .flash-kortti { width: 100%; min-height: 260px; position: relative; transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4,0,0.2,1); border-radius: var(--radius); }
-    .flash-kortti.kaannetty { transform: rotateY(180deg); }
-    .flash-kortti.slide-out-right { animation: slideRight 0.4s ease forwards; }
-    .flash-kortti.slide-out-left { animation: slideLeft 0.4s ease forwards; }
-    @keyframes slideRight { to { transform: translateX(120%) rotateY(20deg); opacity: 0; } }
-    @keyframes slideLeft { to { transform: translateX(-120%) rotateY(-20deg); opacity: 0; } }
-
-    .kortti-sivu { position: absolute; inset: 0; backface-visibility: hidden; border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 36px 32px; text-align: center; }
-    .kortti-etu { background: linear-gradient(135deg, #2d0f52, #1a0a3a); border: 1px solid rgba(192,132,252,0.25); }
-    .kortti-taka { background: linear-gradient(135deg, #0a2a1a, #071a12); border: 1px solid rgba(38,194,129,0.25); transform: rotateY(180deg); }
+    .flash-kortti-wrap { width: 100%; cursor: pointer; margin-bottom: 16px; }
+    .flash-kortti { width: 100%; min-height: 240px; border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 36px 32px; text-align: center; transition: all 0.3s ease; position: relative; }
+    .flash-kortti.puoli-etu { background: linear-gradient(135deg, #2d0f52, #1a0a3a); border: 1px solid rgba(192,132,252,0.25); }
+    .flash-kortti.puoli-taka { background: linear-gradient(135deg, #0a2a1a, #071a12); border: 1px solid rgba(38,194,129,0.35); box-shadow: 0 0 28px rgba(38,194,129,0.15); }
+    .flash-kortti.slide-out-right { animation: slideRight 0.35s ease forwards; }
+    .flash-kortti.slide-out-left { animation: slideLeft 0.35s ease forwards; }
+    @keyframes slideRight { to { transform: translateX(120%); opacity: 0; } }
+    @keyframes slideLeft { to { transform: translateX(-120%); opacity: 0; } }
     .kortti-label { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
     .kortti-teksti { font-size: 1.4rem; font-weight: 800; line-height: 1.4; }
-    .kortti-taka .kortti-teksti { color: var(--D-light); }
+    .flash-kortti.puoli-taka .kortti-teksti { color: var(--D-light); }
     .kortti-selitys-teksti { font-size: 0.82rem; color: var(--muted); margin-top: 14px; line-height: 1.5; }
-    .kortti-hint { font-size: 0.78rem; color: var(--muted); margin-top: 8px; }
+    .kortti-hint { font-size: 0.78rem; color: var(--muted); margin-top: 8px; opacity: 0.7; }
 
-    .kortti-toiminnot { width: 100%; display: none; gap: 16px; }
-    .kortti-btn { flex: 1; padding: 16px; border-radius: var(--radius); border: none; font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+    .kortti-toiminnot { width: 100%; display: none; gap: 16px; margin-top: 4px; }
+    .kortti-btn { flex: 1; padding: 16px; border-radius: var(--radius); border: none; font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
     .kortti-btn.ei { background: rgba(232,57,74,0.2); border: 1px solid var(--A); color: var(--A-light); }
     .kortti-btn.ei:hover { background: rgba(232,57,74,0.35); transform: scale(1.03); }
     .kortti-btn.kylla { background: rgba(38,194,129,0.2); border: 1px solid var(--D); color: var(--D-light); }
@@ -156,14 +155,14 @@
     .kirj-pituus { font-size: 0.75rem; color: var(--muted); font-family: 'Courier New', monospace; }
 
     .kirj-input-wrap { width: 100%; display: flex; gap: 10px; margin-bottom: 12px; }
-    .kirj-input-wrap input { flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(192,132,252,0.3); border-radius: 14px; color: var(--text); font-family: 'Nunito', sans-serif; font-size: 1.1rem; font-weight: 700; padding: 16px 20px; outline: none; transition: border-color 0.2s; }
+    .kirj-input-wrap input { flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(192,132,252,0.3); border-radius: 14px; color: var(--text); font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; padding: 16px 20px; outline: none; transition: border-color 0.2s; }
     .kirj-input-wrap input:focus { border-color: #c084fc; }
     .kirj-input-wrap input:disabled { opacity: 0.5; }
-    .kirj-tarkista { padding: 16px 24px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: 14px; color: white; font-family: 'Nunito', sans-serif; font-size: 0.95rem; font-weight: 900; cursor: pointer; transition: transform 0.15s; white-space: nowrap; }
+    .kirj-tarkista { padding: 16px 24px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: 14px; color: white; font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 900; cursor: pointer; transition: transform 0.15s; white-space: nowrap; }
     .kirj-tarkista:hover { transform: scale(1.04); }
 
     .kirj-vihje-row { display: flex; gap: 10px; width: 100%; margin-bottom: 10px; align-items: center; }
-    .kirj-vihje-btn { padding: 8px 16px; border: 1px solid var(--border); border-radius: 10px; background: transparent; color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .kirj-vihje-btn { padding: 8px 16px; border: 1px solid var(--border); border-radius: 10px; background: transparent; color: var(--muted); font-family: 'Outfit', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
     .kirj-vihje-btn:hover { border-color: #ffc107; color: #ffd754; }
     .kirj-vihje { font-size: 0.85rem; color: #ffd754; font-weight: 600; }
 
@@ -176,7 +175,7 @@
     .result-title { font-size: 2.2rem; font-weight: 900; letter-spacing: -0.02em; }
     .result-emoji { font-size: 4rem; margin-bottom: 8px; }
     .result-score-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; width: 100%; }
-    .big-score { font-size: 4rem; font-weight: 900; background: linear-gradient(135deg, #c084fc, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; }
+    .big-score { font-size: 4rem; font-weight: 900; background: linear-gradient(135deg, #c084fc, #818cf8); background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; }
     .score-label { color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
     .result-breakdown { width: 100%; display: flex; flex-direction: column; gap: 10px; }
     .breakdown-item { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; display: flex; align-items: flex-start; gap: 14px; text-align: left; }
@@ -185,7 +184,7 @@
     .breakdown-a { font-size: 0.8rem; color: var(--muted); }
     .breakdown-a.oikein { color: var(--D-light); }
     .breakdown-a.vaarin { color: var(--A-light); }
-    .btn-restart { padding: 16px 48px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: var(--radius); color: white; font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; box-shadow: 0 8px 32px rgba(124,58,237,0.4); transition: transform 0.15s; }
+    .btn-restart { padding: 16px 48px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: var(--radius); color: white; font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; box-shadow: 0 8px 32px rgba(124,58,237,0.4); transition: transform 0.15s; }
     .btn-restart:hover { transform: translateY(-2px); }
 
     .confetti-piece { position: fixed; width: 10px; height: 10px; top: -20px; border-radius: 2px; animation: confettiFall linear forwards; pointer-events: none; z-index: 999; }
@@ -199,16 +198,19 @@
 
     /* ── KAMERA ── */
     .input-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
-    .input-tab { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center; }
+    .input-tab { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: 'Outfit', sans-serif; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center; }
     .input-tab.active { border-color: #c084fc; background: rgba(192,132,252,0.12); color: var(--text); }
     .input-panel { display: none; }
     .input-panel.active { display: block; }
 
     .kamera-wrap { width: 100%; border-radius: var(--radius); overflow: hidden; background: #000; position: relative; }
-    #kamera-video { width: 100%; max-height: 260px; object-fit: cover; display: block; }
+    #kamera-video { width: 100%; max-height: 260px; object-fit: cover; display: block; transform: scaleX(-1); transition: transform 0.3s ease; }
+    #kamera-video.flipped { transform: scaleX(1); }
+    .kamera-flip-indicator { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.5); color: rgba(255,255,255,0.7); font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 8px; pointer-events: none; transition: opacity 0.3s; }
+    .kamera-wrap { position: relative; }
     #kamera-canvas { display: none; }
     .kamera-toiminnot { display: flex; gap: 10px; margin-top: 10px; }
-    .kamera-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-family: 'Nunito', sans-serif; font-size: 0.88rem; font-weight: 800; cursor: pointer; transition: transform 0.15s; }
+    .kamera-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-family: 'Outfit', sans-serif; font-size: 0.88rem; font-weight: 800; cursor: pointer; transition: transform 0.15s; }
     .kamera-btn.ota { background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; }
     .kamera-btn.ota:hover { transform: scale(1.03); }
     .kamera-btn.vaihda { background: rgba(255,255,255,0.08); border: 1px solid var(--border); color: var(--muted); }
@@ -216,7 +218,7 @@
     .kuva-esikatselu { width: 100%; border-radius: var(--radius); overflow: hidden; position: relative; display: none; }
     .kuva-esikatselu img { width: 100%; max-height: 260px; object-fit: contain; border-radius: var(--radius); border: 1px solid rgba(192,132,252,0.3); }
     .kuva-toiminnot { display: flex; gap: 10px; margin-top: 10px; }
-    .kuva-btn { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .kuva-btn { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
     .kuva-btn:hover { border-color: #c084fc; color: var(--text); }
     .kuva-btn.analysoi { background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; color: white; }
     .kuva-btn.analysoi:hover { transform: scale(1.03); }
@@ -226,7 +228,7 @@
     .ocr-status.virhe { color: #ff6b78; }
 
     /* ── OHJE ── */
-    .ohje-toggle { width: 100%; padding: 12px 18px; background: transparent; border: 1px solid var(--border); border-radius: 12px; color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; text-align: left; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; transition: all 0.2s; }
+    .ohje-toggle { width: 100%; padding: 12px 18px; background: transparent; border: 1px solid var(--border); border-radius: 12px; color: var(--muted); font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; text-align: left; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; transition: all 0.2s; }
     .ohje-toggle:hover { border-color: rgba(192,132,252,0.4); color: var(--text); }
     .ohje-toggle .arrow { transition: transform 0.25s; font-style: normal; }
     .ohje-toggle.auki .arrow { transform: rotate(180deg); }
@@ -243,7 +245,7 @@
     .kuva-analysoi-rivi { display: flex; align-items: center; gap: 14px; margin-top: 12px; padding: 14px 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(192,132,252,0.2); border-radius: 14px; }
     .kuva-esikatselu-pieni { width: 72px; height: 72px; border-radius: 10px; overflow: hidden; flex-shrink: 0; border: 1px solid var(--border); }
     .kuva-esikatselu-pieni img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .kuva-analysoi-btn { flex: 1; padding: 12px 16px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: 12px; color: white; font-family: 'Nunito', sans-serif; font-size: 0.88rem; font-weight: 800; cursor: pointer; transition: transform 0.15s; }
+    .kuva-analysoi-btn { flex: 1; padding: 12px 16px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: 12px; color: white; font-family: 'Outfit', sans-serif; font-size: 0.88rem; font-weight: 800; cursor: pointer; transition: transform 0.15s; }
     .kuva-analysoi-btn:hover { transform: scale(1.02); }
     .kuva-analysoi-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
@@ -278,15 +280,133 @@
     .jarjesta-item.vaarin { border-color: var(--A); background: rgba(232,57,74,0.1); color: var(--A-light); }
     .jarjesta-handle { color: var(--muted); font-size: 1.1rem; flex-shrink: 0; }
     .jarjesta-num { width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 900; flex-shrink: 0; }
-    .jarjesta-tarkista { width: 100%; padding: 16px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: var(--radius); color: white; font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; margin-bottom: 10px; transition: transform 0.15s; }
+    .jarjesta-tarkista { width: 100%; padding: 16px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: var(--radius); color: white; font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; margin-bottom: 10px; transition: transform 0.15s; }
     .jarjesta-tarkista:hover { transform: scale(1.01); }
 
 
+
+    /* ── ANIMAATIOT ── */
+
+    /* Kelluva tausta-aurora */
+    @keyframes aurora1 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(40px,-30px) scale(1.1)} 66%{transform:translate(-20px,20px) scale(0.95)} }
+    @keyframes aurora2 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(-50px,20px) scale(1.08)} 66%{transform:translate(30px,-40px) scale(1.05)} }
+    @keyframes aurora3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(20px,30px) scale(1.12)} }
+
+    .aurora-wrap { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .aurora-blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.18; }
+    .aurora-blob.a1 { width: 600px; height: 500px; top: -150px; left: -100px; background: radial-gradient(circle, #9333ea, #6366f1); animation: aurora1 18s ease-in-out infinite; }
+    .aurora-blob.a2 { width: 500px; height: 600px; bottom: -200px; right: -100px; background: radial-gradient(circle, #1d4ed8, #0ea5e9); animation: aurora2 22s ease-in-out infinite; }
+    .aurora-blob.a3 { width: 400px; height: 400px; top: 40%; left: 40%; background: radial-gradient(circle, #c026d3, #818cf8); animation: aurora3 16s ease-in-out infinite; opacity: 0.1; }
+
+    /* Kortit sisään-animaatio */
+    .card { animation: cardIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .card:nth-child(2) { animation-delay: 0.05s; }
+    .card:nth-child(3) { animation-delay: 0.1s; }
+    .card:nth-child(4) { animation-delay: 0.15s; }
+    .card:nth-child(5) { animation-delay: 0.2s; }
+    @keyframes cardIn { from{opacity:0;transform:translateY(18px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+
+    /* Mode-napit staggered */
+    .mode-btn { animation: modeBtnIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .mode-btn:nth-child(1){animation-delay:0.05s} .mode-btn:nth-child(2){animation-delay:0.1s}
+    .mode-btn:nth-child(3){animation-delay:0.15s} .mode-btn:nth-child(4){animation-delay:0.2s}
+    .mode-btn:nth-child(5){animation-delay:0.25s}
+    @keyframes modeBtnIn { from{opacity:0;transform:scale(0.85) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+    /* Vastausnapit bounce-in */
+    .answer-btn { animation: answerIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .answer-btn:nth-child(1){animation-delay:0.04s} .answer-btn:nth-child(2){animation-delay:0.1s}
+    .answer-btn:nth-child(3){animation-delay:0.16s} .answer-btn:nth-child(4){animation-delay:0.22s}
+    @keyframes answerIn { from{opacity:0;transform:scale(0.8) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+    /* Oikea vastaus */
+    @keyframes correctFlash { 0%{box-shadow:0 0 0 0 rgba(38,194,129,0.7)} 70%{box-shadow:0 0 0 16px rgba(38,194,129,0)} 100%{box-shadow:0 0 0 0 rgba(38,194,129,0)} }
+    .answer-btn.correct { animation: correctPop 0.4s ease both, correctFlash 0.6s ease 0.15s both !important; }
+
+    /* Logo float */
+    .logo { animation: logoShimmer 4s ease infinite, logoFloat 6s ease-in-out infinite; }
+    @keyframes logoFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+    /* Tagline fade-slide */
+    .tagline { animation: taglineIn 0.6s ease 0.1s both; }
+    @keyframes taglineIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    /* Score badge count-up glow on change */
+    .score-badge { transition: transform 0.15s, box-shadow 0.3s; }
+    .score-badge.bump { animation: scoreBump 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+    @keyframes scoreBump { 0%{transform:scale(1)} 50%{transform:scale(1.25)} 100%{transform:scale(1)} }
+
+    /* Feedback bar slide-in */
+    .feedback-bar { animation: feedbackIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+    @keyframes feedbackIn { from{opacity:0;transform:translateY(8px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+
+    /* Progress fill smooth */
+    .progress-fill { transition: width 0.5s cubic-bezier(0.4,0,0.2,1); }
+
+    /* Loading spinner glow */
+    .spinner { box-shadow: 0 0 24px rgba(192,132,252,0.4); }
+
+    /* Result screen pop */
+    .result-emoji { animation: emojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.1s both; }
+    @keyframes emojiPop { from{opacity:0;transform:scale(0.3) rotate(-20deg)} to{opacity:1;transform:scale(1) rotate(0deg)} }
+    .result-title { animation: cardIn 0.5s ease 0.25s both; }
+    .result-score-card { animation: cardIn 0.5s ease 0.35s both; }
+
+    /* Breakdown items stagger */
+    .breakdown-item { animation: cardIn 0.4s ease both; }
+
+    /* Kortti question card */
+    .question-card { animation: cardIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+
+
+    /* Btn-next bounce in */
+    .btn-next.visible { animation: feedbackIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both !important; }
+
+    /* Screen transitions */
+    .screen.active { animation: screenIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+    @keyframes screenIn { from{opacity:0;transform:translateY(24px) scale(0.98)} to{opacity:1;transform:translateY(0) scale(1)} }
+
+    /* ── KAMERA 4-NAPPI ── */
+    .kamera-napit-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .kamera-nappi { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 12px 6px; border-radius: 14px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: var(--text); cursor: pointer; transition: all 0.2s; font-family: 'Outfit', sans-serif; }
+    .kamera-nappi:hover:not(:disabled) { border-color: rgba(192,132,252,0.5); background: rgba(192,132,252,0.1); transform: translateY(-2px); }
+    .kamera-nappi:active:not(:disabled) { transform: scale(0.95); }
+    .kamera-nappi:disabled { opacity: 0.35; cursor: not-allowed; }
+    .kamera-nappi-ikoni { font-size: 1.4rem; line-height: 1; }
+    .kamera-nappi-teksti { font-size: 0.68rem; font-weight: 700; color: var(--muted); letter-spacing: 0.02em; }
+    .kamera-nappi.analysoi-nappi { border-color: rgba(124,58,237,0.4); background: rgba(124,58,237,0.1); }
+    .kamera-nappi.analysoi-nappi:not(:disabled) { border-color: #7c3aed; background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(99,102,241,0.2)); }
+    .kamera-nappi.analysoi-nappi:not(:disabled) .kamera-nappi-teksti { color: #c084fc; }
+    .kamera-nappi.analysoi-nappi:not(:disabled):hover { box-shadow: 0 4px 20px rgba(124,58,237,0.4); }
+    .kuva-esikatselu { display: none; width: 100%; border-radius: var(--radius); overflow: hidden; margin-bottom: 8px; }
+    .kuva-esikatselu img { width: 100%; max-height: 220px; object-fit: contain; border-radius: var(--radius); border: 1px solid rgba(192,132,252,0.2); display: block; }
+
+    /* ── LATAA KOE (SETUP) ── */
+    .lataa-koe-alue { position: relative; width: 100%; border: 2px dashed rgba(56,189,248,0.3); border-radius: var(--radius); padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; margin-top: 12px; }
+    .lataa-koe-alue:hover, .lataa-koe-alue.drag-over { border-color: #38bdf8; background: rgba(56,189,248,0.07); }
+    .lataa-koe-alue input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .lataa-koe-ikoni { font-size: 1.6rem; margin-bottom: 6px; }
+    .lataa-koe-teksti { font-size: 0.9rem; font-weight: 800; color: #38bdf8; }
+    .lataa-koe-sub { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+
+    /* ── TALLENNA KOE (LOADING SCREEN) ── */
+    .tallenna-koe-wrap { display: none; width: 100%; max-width: 480px; }
+    .tallenna-koe-wrap.nakyva { display: block; animation: fadeIn 0.3s ease both; }
+    .tallenna-koe-info { background: rgba(38,194,129,0.1); border: 1px solid rgba(38,194,129,0.3); border-radius: 14px; padding: 16px 20px; text-align: center; margin-bottom: 12px; }
+    .tallenna-koe-info-otsikko { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--D-light); margin-bottom: 8px; }
+    .tallenna-koe-info-rivit { font-size: 0.82rem; color: var(--muted); line-height: 1.8; }
+    .tallenna-koe-info-rivit strong { color: var(--text); }
+    .btn-tallenna-iso { width: 100%; padding: 16px; background: linear-gradient(135deg, rgba(38,194,129,0.2), rgba(16,185,129,0.2)); border: 1px solid rgba(38,194,129,0.4); border-radius: var(--radius); color: var(--D-light); font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; transition: all 0.2s; margin-bottom: 10px; }
+    .btn-tallenna-iso:hover { background: linear-gradient(135deg, rgba(38,194,129,0.3), rgba(16,185,129,0.3)); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(38,194,129,0.2); }
+    .btn-aloita-suoraan { width: 100%; padding: 16px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: none; border-radius: var(--radius); color: white; font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; transition: all 0.2s; box-shadow: 0 8px 32px rgba(124,58,237,0.4); }
+    .btn-aloita-suoraan:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(124,58,237,0.55); }
   </style>
 </head>
 <body>
 
 <!-- SETUP -->
+<div class="aurora-wrap"><div class="aurora-blob a1"></div><div class="aurora-blob a2"></div><div class="aurora-blob a3"></div></div>
 <div class="screen active" id="screen-setup">
   <div class="logo">🧠 AI Koe</div>
   <p class="tagline">Raahaa kirjan luku tai tekstitiedosto — AI luo siitä pelin</p>
@@ -387,18 +507,29 @@
     <div class="input-panel" id="panel-kamera">
       <div class="kamera-wrap" id="kamera-wrap">
         <video id="kamera-video" autoplay playsinline></video>
+        <div class="kamera-flip-indicator" id="kamera-flip-indicator">🔄 Peilikuva</div>
         <canvas id="kamera-canvas"></canvas>
-      </div>
-      <div class="kamera-toiminnot">
-        <button class="kamera-btn ota" onclick="otaKuva()">📸 Ota kuva</button>
-        <button class="kamera-btn vaihda" onclick="vaihda">Vaihda kamera 🔄</button>
       </div>
       <div class="kuva-esikatselu" id="kuva-esikatselu">
         <img id="kuva-preview" src="" alt="Otettu kuva" />
-        <div class="kuva-toiminnot">
-          <button class="kuva-btn" onclick="uusiKuva()">🔄 Ota uusi</button>
-          <button class="kuva-btn analysoi" onclick="analysoi">🔍 Analysoi teksti</button>
-        </div>
+      </div>
+      <div class="kamera-napit-grid">
+        <button class="kamera-nappi" id="btn-ota-kuva" onclick="otaKuva()">
+          <span class="kamera-nappi-ikoni">📸</span>
+          <span class="kamera-nappi-teksti">Ota kuva</span>
+        </button>
+        <button class="kamera-nappi" id="vaihda-kamera-btn" onclick="vaihdaKamera()">
+          <span class="kamera-nappi-ikoni">📷</span>
+          <span class="kamera-nappi-teksti">Vaihda kamera</span>
+        </button>
+        <button class="kamera-nappi" id="btn-flip" onclick="toggleVideoFlip()">
+          <span class="kamera-nappi-ikoni">↔️</span>
+          <span class="kamera-nappi-teksti">Flip</span>
+        </button>
+        <button class="kamera-nappi analysoi-nappi" id="analysoi-btn" onclick="analysoiKuva()" disabled>
+          <span class="kamera-nappi-ikoni">🔍</span>
+          <span class="kamera-nappi-teksti">Analysoi</span>
+        </button>
       </div>
       <div class="ocr-status" id="ocr-status"></div>
     </div>
@@ -441,6 +572,14 @@
   </div>
 
   <button class="btn-start" onclick="aloitaKoe()">🚀 Aloita!</button>
+
+  <!-- Lataa koe -->
+  <div class="lataa-koe-alue" id="lataa-koe-alue">
+    <input type="file" id="lataa-koe-input" accept=".json" />
+    <div class="lataa-koe-ikoni">📂</div>
+    <div class="lataa-koe-teksti">Lataa aiemmin tallennettu koe</div>
+    <div class="lataa-koe-sub">.json — tai raahaa tiedosto tähän</div>
+  </div>
 </div>
 
 <!-- LOADING -->
@@ -452,6 +591,16 @@
   </div>
   <div class="stream-box" id="stream-box"></div>
   <div class="token-count" id="token-count"></div>
+
+  <!-- Tallenna koe -paneeli (ilmestyy kun generointi valmis) -->
+  <div class="tallenna-koe-wrap" id="tallenna-koe-wrap">
+    <div class="tallenna-koe-info">
+      <div class="tallenna-koe-info-otsikko">✅ Koe generoitu!</div>
+      <div class="tallenna-koe-info-rivit" id="tallenna-koe-info-rivit"></div>
+    </div>
+    <button class="btn-tallenna-iso" onclick="tallennaKoe()">💾 Tallenna koe tiedostoon</button>
+    <button class="btn-aloita-suoraan" onclick="aloitaKoeDatasta()">🚀 Aloita peli →</button>
+  </div>
 </div>
 
 <!-- MONIVALINTA -->
@@ -491,17 +640,11 @@
   </div>
 
   <div class="flash-kortti-wrap" onclick="kaannaKortti()">
-    <div class="flash-kortti" id="flash-kortti">
-      <div class="kortti-sivu kortti-etu">
-        <div class="kortti-label">Käsite</div>
-        <div class="kortti-teksti" id="kortti-etu"></div>
-        <div class="kortti-hint">Klikkaa kääntääksesi · Välilyönti toimii myös</div>
-      </div>
-      <div class="kortti-sivu kortti-taka">
-        <div class="kortti-label">Vastaus</div>
-        <div class="kortti-teksti" id="kortti-taka"></div>
-        <div class="kortti-selitys-teksti" id="kortti-selitys"></div>
-      </div>
+    <div class="flash-kortti puoli-etu" id="flash-kortti">
+      <div class="kortti-label" id="kortti-label">Käsite</div>
+      <div class="kortti-teksti" id="kortti-etu"></div>
+      <div class="kortti-selitys-teksti" id="kortti-selitys" style="display:none"></div>
+      <div class="kortti-hint" id="kortti-hint">Klikkaa kääntääksesi · Välilyönti toimii myös</div>
     </div>
   </div>
 
