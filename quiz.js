@@ -96,7 +96,14 @@ Vastaa AINOASTAAN validilla JSON-taulukolla tässä muodossa (ei muuta tekstiä)
 ]
 
 Oikea-kenttä on oikean vastauksen indeksi (0=A, 1=B, 2=C, 3=D).
-Tee kysymyksistä selkeitä, opettavaisia ja ${vaikeus}-tasoisia.`;
+Tee kysymyksistä selkeitä, opettavaisia ja ${vaikeus}-tasoisia.
+
+TÄRKEÄÄ väärille vaihtoehdoille:
+- Väärät vaihtoehdot tulee olla USKOTTAVIA ja HOUKUTTELEVIA — ei liian helppoja arvata
+- Jos oikea vastaus on luku tai vuosi (esim. 1281), väärät vaihtoehdot tulee olla lähellä oikeaa (esim. 1279, 1283, 1285) — EI pyöreitä lukuja kuten 1200 tai 1300
+- Jos oikea vastaus on nimi, väärät vaihtoehdot ovat saman aikakauden tai alueen nimiä
+- Väärät vaihtoehdot eivät saa olla ilmiselvästi vääriä tai absurdeja
+- Kaikki neljä vaihtoehtoa tulee olla saman tyyppisiä`;
   }
 
   const streamBox = document.getElementById('stream-box');
@@ -113,18 +120,14 @@ Tee kysymyksistä selkeitä, opettavaisia ja ${vaikeus}-tasoisia.`;
 
   try {
     // max_tokens lasketaan pelimuodon ja kysymysmäärän mukaan
-    const tokensPerQ = {
-      'quiz': 120, 'kortit': 80, 'kirjoitus': 60,
-      'muisti': 80, 'jarjesta': 200
-    }[pelimuoto] || 120;
-    const arvioituTokenit = parseInt(maara) * tokensPerQ + 400;
-    const maxTokens = Math.min(arvioituTokenit, 4096);
+    const maxTokens = 4096;
 
     // Pilkotaan prompt kahteen osaan:
     // 1. Teksti (cacheable — kallis osa, välimuistitetaan)
     // 2. Ohjeet (lyhyt, vaihtelee pelimuodon mukaan)
-    const [ohjeOsa, tekstiOsa] = prompt.split('TEKSTI:');
-    const kayttajanTeksti = tekstiOsa || '';
+    const _si = prompt.indexOf('TEKSTI:');
+    const ohjeOsa = _si >= 0 ? prompt.slice(0, _si) : prompt;
+    const kayttajanTeksti = _si >= 0 ? prompt.slice(_si + 7).trimStart() : '';
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -210,12 +213,7 @@ Tee kysymyksistä selkeitä, opettavaisia ja ${vaikeus}-tasoisia.`;
       .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
 
     kysymykset = JSON.parse(teksti);
-    nykyinen = 0; pisteet = 0; vastaukset = [];
-    aikaJaljella = parseInt(document.getElementById('aika').value);
-
-    if (pelimuoto === 'kortit') aloitaKortit();
-    else if (pelimuoto === 'kirjoitus') aloitaKirjoitus();
-    else { nakyta('screen-quiz'); naytaKysymys(); }
+    naytaTallennaPaneeli();
 
   } catch (e) {
     nakyta('screen-setup');
@@ -233,6 +231,8 @@ function naytaKysymys() {
   document.getElementById('progress-label').textContent = `Kysymys ${nykyinen + 1} / ${total}`;
   document.getElementById('progress-fill').style.width = `${(nykyinen / total) * 100}%`;
   document.getElementById('score-display').textContent = pisteet;
+  const badge = document.querySelector('.score-badge');
+  if (badge) { badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump'); }
   document.getElementById('feedback-bar').style.display = 'none';
   document.getElementById('btn-next').classList.remove('visible');
   const grid = document.getElementById('answers-grid');
@@ -328,30 +328,59 @@ function naytaKortti() {
   if (korttiNykyinen >= total) { naytaKorttiTulokset(); return; }
   const k = kysymykset[korttiJarjestys[korttiNykyinen]];
   korttiKaannetty = false;
+
   document.getElementById('kortti-progress').textContent = `${korttiNykyinen + 1} / ${total}`;
   document.getElementById('kortti-progress-fill').style.width = `${(korttiNykyinen / total) * 100}%`;
   document.getElementById('kortti-tunnetaan').textContent = korttiTunnetaan;
   document.getElementById('kortti-ei-tunnetaan').textContent = korttiEiTunnetaan;
+
   const kortti = document.getElementById('flash-kortti');
-  kortti.classList.remove('kaannetty', 'slide-out-right', 'slide-out-left');
+  kortti.className = 'flash-kortti puoli-etu'; // reset to question side
+
+  // Show question
+  document.getElementById('kortti-label').textContent = 'KÄSITE';
   document.getElementById('kortti-etu').textContent = k.etupuoli;
-  document.getElementById('kortti-taka').textContent = k.takapuoli;
-  document.getElementById('kortti-selitys').textContent = k.selitys || '';
+  document.getElementById('kortti-selitys').style.display = 'none';
+  document.getElementById('kortti-selitys').textContent = '';
+  document.getElementById('kortti-hint').style.display = 'block';
+
+  // Hide action buttons
   document.getElementById('kortti-toiminnot').style.display = 'none';
 }
 
 function kaannaKortti() {
-  if (korttiKaannetty) return;
-  korttiKaannetty = true;
-  document.getElementById('flash-kortti').classList.add('kaannetty');
-  setTimeout(() => { document.getElementById('kortti-toiminnot').style.display = 'flex'; }, 350);
+  const k = kysymykset[korttiJarjestys[korttiNykyinen]];
+  const kortti = document.getElementById('flash-kortti');
+
+  if (!korttiKaannetty) {
+    // Käännä: näytä vastaus
+    korttiKaannetty = true;
+    kortti.className = 'flash-kortti puoli-taka';
+    document.getElementById('kortti-label').textContent = 'VASTAUS';
+    document.getElementById('kortti-etu').textContent = k.takapuoli;
+    if (k.selitys) {
+      document.getElementById('kortti-selitys').textContent = k.selitys;
+      document.getElementById('kortti-selitys').style.display = 'block';
+    }
+    document.getElementById('kortti-hint').style.display = 'none';
+    document.getElementById('kortti-toiminnot').style.display = 'flex';
+  } else {
+    // Käännä takaisin: näytä kysymys uudelleen
+    korttiKaannetty = false;
+    kortti.className = 'flash-kortti puoli-etu';
+    document.getElementById('kortti-label').textContent = 'KÄSITE';
+    document.getElementById('kortti-etu').textContent = k.etupuoli;
+    document.getElementById('kortti-selitys').style.display = 'none';
+    document.getElementById('kortti-hint').style.display = 'block';
+    document.getElementById('kortti-toiminnot').style.display = 'none';
+  }
 }
 
 function korttiVastaus(tunnetaan) {
   if (tunnetaan) korttiTunnetaan++; else korttiEiTunnetaan++;
   const kortti = document.getElementById('flash-kortti');
   kortti.classList.add(tunnetaan ? 'slide-out-right' : 'slide-out-left');
-  setTimeout(() => { kortti.classList.remove('slide-out-right','slide-out-left'); korttiNykyinen++; naytaKortti(); }, 400);
+  setTimeout(() => { korttiNykyinen++; naytaKortti(); }, 360);
 }
 
 function naytaKorttiTulokset() {
@@ -409,6 +438,18 @@ function naytaKirjoitusTehtava() {
   }, 1000);
 }
 
+// Laskee Levenshtein-etäisyyden — kuinka monta muutosta tarvitaan
+function levenshtein(a, b) {
+  const dp = Array.from({length: a.length + 1}, (_, i) =>
+    Array.from({length: b.length + 1}, (_, j) => i === 0 ? j : j === 0 ? i : 0)
+  );
+  for (let i = 1; i <= a.length; i++)
+    for (let j = 1; j <= b.length; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[a.length][b.length];
+}
+
 function kirjoitusTarkista() {
   const q = kysymykset[nykyinen];
   const syote = document.getElementById('kirj-input').value.trim().toLowerCase();
@@ -416,20 +457,40 @@ function kirjoitusTarkista() {
   if (!syote) return;
   clearInterval(kirjoitusTimer);
   document.getElementById('kirj-input').disabled = true;
-  const oikein = syote === oikea || oikea.includes(syote) || syote.includes(oikea);
+
   const aikaBonus = Math.round(kirjoitusAika * 10);
   const fb = document.getElementById('kirj-feedback');
-  if (oikein) {
-    pisteet += 100 + aikaBonus; kirjoitusOikein++;
-    fb.textContent = `✅ Oikein! +${100 + aikaBonus} pistettä`;
+
+  // Tarkka osuma
+  const tarkkaOikein = syote === oikea || oikea.includes(syote) || syote.includes(oikea);
+
+  // Lähes oikein: Levenshtein-etäisyys <= 2 tai >= 80% yhteisiä merkkejä
+  const etaisyys = levenshtein(syote, oikea);
+  const maxPituus = Math.max(syote.length, oikea.length);
+  const lahesOikein = !tarkkaOikein && (etaisyys <= 2 || (etaisyys / maxPituus) <= 0.2);
+
+  if (tarkkaOikein) {
+    pisteet += 100 + aikaBonus;
+    kirjoitusOikein++;
+    fb.innerHTML = `✅ Oikein! <strong>+${100 + aikaBonus} pistettä</strong>`;
     fb.className = 'kirj-feedback oikein';
+    vastaukset.push({ kysymys: q.kysymys, oma: syote, oikea: q.vastaus, oikein: true, selitys: q.vihje || '', vaihtoehdot: [] });
+  } else if (lahesOikein) {
+    const puoliPisteet = Math.round((50 + aikaBonus / 2));
+    pisteet += puoliPisteet;
+    kirjoitusOikein++;
+    fb.innerHTML = `⚠️ Lähes oikein! <strong>+${puoliPisteet} pistettä</strong> — Oikea: "<em>${q.vastaus}</em>"`;
+    fb.className = 'kirj-feedback lahes';
+    vastaukset.push({ kysymys: q.kysymys, oma: syote, oikea: q.vastaus, oikein: true, lahes: true, selitys: q.vihje || '', vaihtoehdot: [] });
   } else {
     kirjoitusVirheet++;
-    fb.textContent = `❌ Oikea vastaus: "${q.vastaus}"`;
+    fb.innerHTML = `❌ Väärin. Oikea: "<em>${q.vastaus}</em>"`;
     fb.className = 'kirj-feedback vaarin';
+    vastaukset.push({ kysymys: q.kysymys, oma: syote, oikea: q.vastaus, oikein: false, selitys: q.vihje || '', vaihtoehdot: [] });
   }
-  vastaukset.push({ kysymys: q.kysymys, oma: syote, oikea: q.vastaus, oikein, selitys: q.vihje || '', vaihtoehdot: [] });
-  setTimeout(() => { nykyinen++; naytaKirjoitusTehtava(); }, 1200);
+
+  document.getElementById('kirj-score').textContent = pisteet;
+  setTimeout(() => { nykyinen++; naytaKirjoitusTehtava(); }, 1400);
 }
 
 function kirjoitusAikaLoppui() {
@@ -502,6 +563,7 @@ function naytaTulokset() {
         <div class="breakdown-q">${i+1}. ${v.kysymys}</div>
         <div class="breakdown-a ${v.oikein ? 'oikein' : 'vaarin'}">${aTeksti}</div>
       </div>`;
+    item.style.animationDelay = (i * 0.06) + 's';
     bd.appendChild(item);
   });
 }
@@ -525,6 +587,8 @@ function takaisin() {
   document.getElementById('aihe').value = '';
   dropZone.classList.remove('has-file');
   fileNameEl.textContent = '';
+  kysymykset = [];
+  document.getElementById('tallenna-koe-wrap').classList.remove('nakyva');
 }
 
 // ── DRAG & DROP ──
@@ -662,25 +726,41 @@ function vaihdaTab(tab) {
   });
   document.querySelectorAll('.input-panel').forEach(p => p.classList.remove('active'));
   document.getElementById(`panel-${tab}`).classList.add('active');
-  if (tab === 'kamera') aloitaKamera();
-  else pysaytaKamera();
+  if (tab === 'kamera') aloitaKamera(false);
+  else pysaytaKamera(); // pysäytä vasta kun poistutaan kamera-tabista
 }
 
 // ══ KAMERA ══
 let kameraStream = null;
-let kameraFacing = 'environment'; // takakamera ensin
+let kameraFacing = 'environment';
 let otettuKuvaData = null;
+let videoFlipped = true; // etukamera näyttää peilikuvana oletuksena
 
-async function aloitaKamera() {
-  pysaytaKamera();
+async function aloitaKamera(pakotettuVaihto = false) {
+  // Pysäytä vain jos vaihdetaan kameraa — muuten pidä stream hengissä
+  if (pakotettuVaihto) pysaytaKamera();
+
+  document.getElementById('ocr-status').textContent = '';
+  document.getElementById('kuva-esikatselu').style.display = 'none';
+  document.getElementById('kamera-wrap').style.display = 'block';
+
+  // Jos stream on jo käynnissä ja oikea kamera, käytä sitä uudelleen
+  if (kameraStream && !pakotettuVaihto) {
+    const vid = document.getElementById('kamera-video');
+    vid.srcObject = kameraStream;
+    return;
+  }
+
   try {
-    document.getElementById('ocr-status').textContent = '';
-    document.getElementById('kuva-esikatselu').style.display = 'none';
-    document.getElementById('kamera-wrap').style.display = 'block';
     kameraStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: kameraFacing, width: { ideal: 1920 }, height: { ideal: 1080 } }
     });
-    document.getElementById('kamera-video').srcObject = kameraStream;
+    const vid = document.getElementById('kamera-video');
+    vid.srcObject = kameraStream;
+    videoFlipped = kameraFacing === 'user';
+    vid.classList.toggle('flipped', !videoFlipped);
+    const ind = document.getElementById('kamera-flip-indicator');
+    if (ind) ind.style.opacity = videoFlipped ? '1' : '0';
   } catch (e) {
     document.getElementById('ocr-status').textContent = '⚠️ Kamera ei ole käytettävissä: ' + e.message;
     document.getElementById('ocr-status').className = 'ocr-status virhe';
@@ -696,7 +776,15 @@ function pysaytaKamera() {
 
 async function vaihdaKamera() {
   kameraFacing = kameraFacing === 'environment' ? 'user' : 'environment';
-  await aloitaKamera();
+  await aloitaKamera(true); // pakota uudelleenkäynnistys
+}
+
+function toggleVideoFlip() {
+  videoFlipped = !videoFlipped;
+  const vid = document.getElementById('kamera-video');
+  vid.classList.toggle('flipped', !videoFlipped);
+  const ind = document.getElementById('kamera-flip-indicator');
+  if (ind) ind.style.opacity = videoFlipped ? '1' : '0';
 }
 
 // Aseta vaihda-nappi oikein (inline onclick ei pysty kutsua async suoraan)
@@ -710,27 +798,44 @@ function otaKuva() {
   const canvas = document.getElementById('kamera-canvas');
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0);
+  const ctx = canvas.getContext('2d');
+  if (videoFlipped) {
+    // Video näkyy peilikuvana — peilaa takaisin oikeaksi ennen tallennusta
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+  }
+  ctx.drawImage(video, 0, 0);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   otettuKuvaData = canvas.toDataURL('image/jpeg', 0.92);
 
   // Näytä esikatselu
   document.getElementById('kuva-preview').src = otettuKuvaData;
   document.getElementById('kuva-esikatselu').style.display = 'block';
   document.getElementById('kamera-wrap').style.display = 'none';
-  document.getElementById('ocr-status').textContent = '✅ Kuva otettu — paina "Analysoi teksti"';
+  document.getElementById('ocr-status').textContent = '✅ Kuva otettu — paina Analysoi';
   document.getElementById('ocr-status').className = 'ocr-status valmis';
-
-  pysaytaKamera();
-
-  // Korjaa analysoi-nappi
-  document.querySelector('.kuva-btn.analysoi').onclick = analysoiKuva;
+  // Aktivoi analysoi-nappi
+  document.getElementById('analysoi-btn').disabled = false;
+  // Vaihda Ota kuva -nappi "Ota uusi" -tilaan
+  const otaBtn = document.getElementById('btn-ota-kuva');
+  otaBtn.querySelector('.kamera-nappi-ikoni').textContent = '🔄';
+  otaBtn.querySelector('.kamera-nappi-teksti').textContent = 'Ota uusi';
+  otaBtn.onclick = uusiKuva;
+  // Ei pysäytetä kameraa — niin uusi kuva ei pyydä lupaa uudelleen
 }
 
 function uusiKuva() {
   otettuKuvaData = null;
   document.getElementById('kuva-esikatselu').style.display = 'none';
+  document.getElementById('kamera-wrap').style.display = 'block';
   document.getElementById('ocr-status').textContent = '';
-  aloitaKamera();
+  document.getElementById('analysoi-btn').disabled = true;
+  const otaBtn = document.getElementById('btn-ota-kuva');
+  otaBtn.querySelector('.kamera-nappi-ikoni').textContent = '📸';
+  otaBtn.querySelector('.kamera-nappi-teksti').textContent = 'Ota kuva';
+  otaBtn.onclick = otaKuva;
+  // Käynnistä kamera uudelleen ILMAN pysäyttämistä — ei lupapyyntöä
+  aloitaKamera(false);
 }
 
 async function analysoiKuva() {
@@ -764,7 +869,7 @@ async function analysoiKuva() {
             },
             {
               type: "text",
-              text: "Lue tämä kuva tarkasti ja pura kaikki teksti siitä. Säilytä rakenne (otsikot, kappaleet, listat) mahdollisimman hyvin. Palauta AINOASTAAN kuvan teksti ilman kommentteja tai selityksiä."
+              text: "Lue tämä kuva tarkasti. Kuva saattaa olla käännetty tai kallistettu — lue teksti siitä riippumatta miten päin kuva on. Säilytä rakenne (otsikot, kappaleet, listat). Jos kuvassa EI ole tekstiä, vastaa AINOASTAAN: \"EI_TEKSTIA\". Muussa tapauksessa palauta AINOASTAAN kuvan teksti ilman kommentteja."
             }
           ]
         }]
@@ -814,8 +919,12 @@ function aloitaMuisti() {
     parit.push({ id: i * 2 + 1, pariId: i, teksti: k.takapuoli || (k.vaihtoehdot ? k.vaihtoehdot[k.oikea] : k.vastaus), tyyppi: 'vastaus' });
   });
 
-  // Sekoita
-  muistiKortit = parit.sort(() => Math.random() - 0.5);
+  // Sekoita Fisher-Yates -algoritmilla
+  muistiKortit = parit;
+  for (let i = muistiKortit.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [muistiKortit[i], muistiKortit[j]] = [muistiKortit[j], muistiKortit[i]];
+  }
   muistiAuki = [];
   muistiLoydetty = 0;
   muistiYritykset = 0;
@@ -1111,11 +1220,11 @@ TÄRKEÄÄ: vaihtoehdot-taulukon järjestys ON oikea järjestys. Sekoitan sen pe
 
     try {
       const kysymysMaara = parseInt(maara);
-      const tokensPerQNew = pelimuoto === 'jarjesta' ? 200 : 80;
-      const arvioituTokenit = kysymysMaara * tokensPerQNew + 400;
-      const maxTokens = Math.min(arvioituTokenit, 4096);
+      const maxTokens = 4096;
 
-      const [ohjeOsa, tekstiOsa] = prompt.split('TEKSTI:\n');
+      const splitIdx2 = prompt.indexOf('TEKSTI:');
+      const ohjeOsa = splitIdx2 >= 0 ? prompt.slice(0, splitIdx2) : prompt;
+      const kayttajanTeksti = splitIdx2 >= 0 ? prompt.slice(splitIdx2 + 'TEKSTI:'.length).replace(/^\n/, '') : '';
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -1180,11 +1289,7 @@ TÄRKEÄÄ: vaihtoehdot-taulukon järjestys ON oikea järjestys. Sekoitan sen pe
         .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
 
       kysymykset = JSON.parse(teksti);
-      nykyinen = 0; pisteet = 0; vastaukset = [];
-      aikaJaljella = parseInt(document.getElementById('aika').value);
-
-      if (pelimuoto === 'muisti') aloitaMuisti();
-      else if (pelimuoto === 'jarjesta') aloitaJarjesta();
+      naytaTallennaPaneeli();
 
     } catch (e) {
       nakyta('screen-setup');
@@ -1198,4 +1303,193 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('screen-kirjoitus')?.classList.contains('active')) {
     if (!document.getElementById('kirj-input').disabled) kirjoitusTarkista();
   }
+});
+
+// ══════════════════════════════════════
+
+function naytaTallennaNappi() {
+  const btn = document.getElementById('btn-tallenna');
+  if (btn) btn.style.display = 'block';
+}
+
+function tallennaKoe() {
+  if (!kysymykset || kysymykset.length === 0) {
+    alert('Ei tallennettavaa — generoi ensin koe.');
+    return;
+  }
+
+  const data = {
+    versio: 1,
+    pelimuoto,
+    luotu: new Date().toISOString(),
+    kysymykset,
+  };
+
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const aihe = document.getElementById('aihe')?.value?.slice(0, 30).trim().replace(/[^a-zA-Z0-9äöåÄÖÅ ]/g, '') || 'koe';
+  a.href = url;
+  a.download = `ai-koe-${aihe}-${pelimuoto}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function lataaKoeTiedostosta(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+
+      if (!data.kysymykset || !Array.isArray(data.kysymykset) || data.kysymykset.length === 0) {
+        alert('Virheellinen koetiedosto — kysymyksiä ei löydy.');
+        return;
+      }
+
+      // Lataa tiedot
+      kysymykset = data.kysymykset;
+      if (data.pelimuoto) {
+        valitsePelimuoto(data.pelimuoto);
+      }
+
+      // Näytä info
+      const info = document.getElementById('koe-ladattu-info');
+      const luotu = data.luotu ? new Date(data.luotu).toLocaleDateString('fi-FI') : '?';
+      info.textContent = `✅ Ladattu: ${kysymykset.length} kysymystä · pelimuoto: ${data.pelimuoto || '?'} · luotu ${luotu}`;
+      info.style.display = 'block';
+
+      // Näytä tallenna-nappi
+
+      // Nollaa tiedostovalinta
+      input.value = '';
+
+    } catch (err) {
+      alert('Tiedoston lukeminen epäonnistui: ' + err.message);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function kaynnistaLadattuKoe() {
+  // Käynnistä koe suoraan ilman API-kutsua ladatuilla kysymyksillä
+  if (!kysymykset || kysymykset.length === 0) return false;
+  nykyinen = 0; pisteet = 0; vastaukset = [];
+  aikaJaljella = parseInt(document.getElementById('aika').value);
+  if (pelimuoto === 'kortit') aloitaKortit();
+  else if (pelimuoto === 'kirjoitus') aloitaKirjoitus();
+  else if (pelimuoto === 'muisti') aloitaMuisti();
+  else if (pelimuoto === 'jarjesta') aloitaJarjesta();
+  else { nakyta('screen-quiz'); naytaKysymys(); }
+  return true;
+}
+
+// ══════════════════════════════════════
+// TALLENNA / LATAA KOE
+// ══════════════════════════════════════
+
+function naytaTallennaPaneeli() {
+  // Piilota stream, näytä tallenna-paneeli
+  document.getElementById('stream-box').classList.remove('active');
+  document.getElementById('token-count').style.display = 'none';
+  document.querySelector('.spinner').style.display = 'none';
+  document.querySelector('.loading-text').style.display = 'none';
+  document.querySelector('.loading-sub').style.display = 'none';
+
+  const wrap = document.getElementById('tallenna-koe-wrap');
+  wrap.classList.add('nakyva');
+
+  // Laske info
+  const pelimuotoNimet = {
+    quiz: '🎯 Monivalinta', kortit: '🃏 Kääntelykortit',
+    kirjoitus: '⌨️ Kirjoituspeli', muisti: '🧩 Muistipeli', jarjesta: '🔀 Järjestä'
+  };
+  document.getElementById('tallenna-koe-info-rivit').innerHTML =
+    `<strong>${pelimuotoNimet[pelimuoto] || pelimuoto}</strong> · <strong>${kysymykset.length}</strong> kysymystä`;
+}
+
+function aloitaKoeDatasta() {
+  // Palauta loading screen normaaliksi seuraavaa kertaa varten
+  document.querySelector('.spinner').style.display = '';
+  document.querySelector('.loading-text').style.display = '';
+  document.querySelector('.loading-sub').style.display = '';
+  document.getElementById('token-count').style.display = '';
+  document.getElementById('tallenna-koe-wrap').classList.remove('nakyva');
+
+  nykyinen = 0; pisteet = 0; vastaukset = [];
+  aikaJaljella = parseInt(document.getElementById('aika').value);
+
+  if (pelimuoto === 'kortit') aloitaKortit();
+  else if (pelimuoto === 'kirjoitus') aloitaKirjoitus();
+  else if (pelimuoto === 'muisti') aloitaMuisti();
+  else if (pelimuoto === 'jarjesta') aloitaJarjesta();
+  else { nakyta('screen-quiz'); naytaKysymys(); }
+}
+
+function tallennaKoe() {
+  if (!kysymykset || kysymykset.length === 0) {
+    alert('Ei tallennettavaa.');
+    return;
+  }
+
+  const data = {
+    versio: 1,
+    pelimuoto,
+    luotu: new Date().toISOString(),
+    kysymykset,
+  };
+
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const nimi = `ai-koe-${pelimuoto}-${kysymykset.length}kys.json`;
+  a.href = url;
+  a.download = nimi;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function lataaKoeTiedostosta(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.kysymykset || !Array.isArray(data.kysymykset) || data.kysymykset.length === 0)
+        throw new Error('Koetiedostossa ei ole kysymyksiä.');
+
+      kysymykset = data.kysymykset;
+      if (data.pelimuoto) valitsePelimuoto(data.pelimuoto);
+
+      // Aloita suoraan
+      aloitaKoeDatasta();
+
+    } catch (err) {
+      alert('Virhe: ' + err.message);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// Wire lataa-koe input + drag & drop
+document.addEventListener('DOMContentLoaded', () => {
+  const alue = document.getElementById('lataa-koe-alue');
+  const input = document.getElementById('lataa-koe-input');
+  if (!alue || !input) return;
+
+  input.addEventListener('change', e => { if (e.target.files[0]) lataaKoeTiedostosta(e.target.files[0]); });
+
+  alue.addEventListener('dragover', e => { e.preventDefault(); alue.classList.add('drag-over'); });
+  alue.addEventListener('dragleave', () => alue.classList.remove('drag-over'));
+  alue.addEventListener('drop', e => {
+    e.preventDefault();
+    alue.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.json')) lataaKoeTiedostosta(file);
+    else alert('Lataa .json-koetiedosto.');
+  });
 });
